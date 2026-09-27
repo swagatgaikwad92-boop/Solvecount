@@ -3,7 +3,7 @@
  * IndexedDB (all real data) is untouched by this file.
  */
 
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.0.1';
 const CACHE = `solvecount-${VERSION}`;
 
 const SCOPE = self.registration.scope; // e.g. https://user.github.io/solvecount/
@@ -11,15 +11,15 @@ const P = (path) => new URL(path, SCOPE).toString();
 
 const PRECACHE = [
   './', './index.html', './manifest.json',
-  './styles/core.css', './styles/glass.css', './styles/components.css', './styles/animations.css',
-  './scripts/app.js', './scripts/utils.js', './scripts/ui.js', './scripts/state.js', './scripts/storage.js',
-  './scripts/camera.js', './scripts/addflow.js', './scripts/timeline.js', './scripts/home.js',
-  './scripts/statistics.js', './scripts/history.js', './scripts/subjects.js', './scripts/settings.js',
-  './scripts/mascot.js', './scripts/counter.js', './scripts/fx.js', './scripts/notify.js', './scripts/install.js',
-  './assets/fonts/poppins-Medium.woff', './assets/fonts/poppins-Bold.woff',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png',
-  './assets/icons/icon-maskable-192.png', './assets/icons/icon-maskable-512.png',
-  './assets/icons/apple-touch-icon.png'
+  './core.css', './glass.css', './components.css', './animations.css',
+  './app.js', './utils.js', './ui.js', './state.js', './storage.js',
+  './camera.js', './addflow.js', './timeline.js', './home.js',
+  './statistics.js', './history.js', './subjects.js', './settings.js',
+  './mascot.js', './counter.js', './fx.js', './notify.js', './install.js',
+  './poppins-Medium.woff', './poppins-Bold.woff',
+  './icon-192.png', './icon-512.png',
+  './icon-maskable-192.png', './icon-maskable-512.png',
+  './apple-touch-icon.png'
 ].map(P);
 
 self.addEventListener('install', (event) => {
@@ -83,8 +83,8 @@ self.addEventListener('periodicsync', (event) => {
     await self.registration.showNotification('Ready for a question or two?', {
       body: 'Your study trail is waiting. Snap one and watch it grow.',
       tag: 'daily-reminder',
-      icon: P('./assets/icons/icon-192.png'),
-      badge: P('./assets/icons/icon-192.png')
+      icon: P('./icon-192.png'),
+      badge: P('./icon-192.png')
     });
   })());
 });

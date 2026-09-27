@@ -22,13 +22,13 @@ export async function show(title, body, tag) {
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification(title, {
       body, tag,
-      icon: './assets/icons/icon-192.png',
-      badge: './assets/icons/icon-192.png',
+      icon: './icon-192.png',
+      badge: './icon-192.png',
       data: { url: './' }
     });
     return true;
   } catch {
-    try { new Notification(title, { body, tag, icon: './assets/icons/icon-192.png' }); return true; } catch { return false; }
+    try { new Notification(title, { body, tag, icon: './icon-192.png' }); return true; } catch { return false; }
   }
 }
 

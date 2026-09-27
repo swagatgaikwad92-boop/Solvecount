@@ -2,13 +2,13 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('../assets/fonts/poppins-Medium.woff') format('woff');
+  src: url('./poppins-Medium.woff') format('woff');
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: 'Poppins';
-  src: url('../assets/fonts/poppins-Bold.woff') format('woff');
+  src: url('./poppins-Bold.woff') format('woff');
   font-weight: 700;
   font-display: swap;
 }
