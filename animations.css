@@ -1,0 +1,168 @@
+/* SolveCount — animations. Everything here degrades with [data-motion]:
+     full → all animation; low → short/cheap only; off → static. */
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes splash-pulse { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+@keyframes view-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes cam-flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes bar-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes bubble-pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes pip-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes pip-jump { 0% { transform: translateY(0) scale(1,1); } 22% { transform: translateY(-22px) scale(.97,1.05); } 45% { transform: translateY(0) scale(1.06,.92); } 65% { transform: translateY(-8px) scale(.99,1.02); } 100% { transform: translateY(0) scale(1,1); } }
+@keyframes pip-spin { 0% { transform: rotate(0deg) translateY(0); } 40% { transform: rotate(190deg) translateY(-16px); } 70% { transform: rotate(370deg) translateY(0); } 100% { transform: rotate(360deg); } }
+@keyframes pip-wiggle { 0%, 100% { transform: rotate(0deg); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
+@keyframes arm-wave-l { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-34deg); } }
+@keyframes arm-wave-r { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(34deg); } }
+@keyframes halo-spin { to { transform: rotate(360deg); } }
+@keyframes sparkle-tw { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes cheek-in { from { opacity: 0; } to { opacity: .6; } }
+@keyframes fx-banner-glow { 0%,100% { filter: drop-shadow(0 0 14px rgba(139,107,255,.5)); } 50% { filter: drop-shadow(0 0 26px rgba(70,200,255,.6)); } }
+
+/* ---------- rolling number ---------- */
+.roll { display: inline-flex; line-height: 1; }
+.roll-digit { display: inline-block; height: 1em; overflow: hidden; line-height: 1; }
+.roll-col { display: block; line-height: 1; transform: translateY(calc(var(--i, 0) * -1em)); transition: transform .6s cubic-bezier(.3,.85,.35,1); }
+.roll-col.is-new { transform: translateY(0); }
+.roll-cell { display: block; height: 1em; line-height: 1; text-align: center; }
+.roll.bump { animation: counter-bump .34s var(--ease-back); }
+@keyframes counter-bump { 30% { transform: scale(1.06); } }
+:root[data-motion='off'] .roll-col { transition: none !important; }
+
+/* ---------- mascot: Pip ---------- */
+.pip-wrap { position: relative; }
+.pip-bob { transform-origin: 100px 190px; }
+:root[data-motion='full'] .pip-bob { animation: pip-bob 3.6s ease-in-out infinite; }
+.pip-halo { transform-origin: 100px 22px; opacity: 0; transition: opacity .3s; }
+.pip-crown { opacity: 0; transform: translateY(-6px); transition: opacity .3s, transform .3s var(--ease-back); }
+.arm { transition: transform .3s var(--ease); }
+.cheeks { opacity: 0; transition: opacity .3s; }
+.bulb { transition: fill .3s; }
+.bulb-glow { opacity: 0; transition: opacity .3s; }
+
+/* mouths / eyes: default = calm */
+.eyes-open { opacity: 1; transition: opacity .2s; }
+.eyes-happy, .eyes-star { opacity: 0; transition: opacity .2s; }
+.m-calm { opacity: 1; transition: opacity .2s; }
+.m-smile, .m-open { opacity: 0; transition: opacity .2s; }
+.m-tongue { opacity: 0; }
+
+.pip[data-mood='calm'] .pip-halo { opacity: .5; }
+
+.pip[data-mood='happy'] .m-calm,
+.pip[data-mood='excited'] .m-calm,
+.pip[data-mood='celebrating'] .m-calm,
+.pip[data-mood='wild'] .m-calm,
+.pip[data-mood='special'] .m-calm,
+.pip[data-mood='major'] .m-calm { opacity: 0; }
+
+.pip[data-mood='happy'] .m-smile { opacity: 1; }
+.pip[data-mood='happy'] .cheeks { opacity: 1; }
+.pip[data-mood='happy'] .pip-halo { opacity: .7; }
+
+.pip[data-mood='excited'] .eyes-open { opacity: 0; }
+.pip[data-mood='excited'] .eyes-happy { opacity: 1; }
+.pip[data-mood='excited'] .m-open { opacity: 1; }
+.pip[data-mood='excited'] .cheeks { opacity: 1; }
+.pip[data-mood='excited'] .bulb-glow { opacity: .6; }
+
+.pip[data-mood='celebrating'] .eyes-open { opacity: 0; }
+.pip[data-mood='celebrating'] .eyes-star { opacity: 1; }
+.pip[data-mood='celebrating'] .m-open { opacity: 1; }
+.pip[data-mood='celebrating'] .m-tongue { opacity: 1; }
+.pip[data-mood='celebrating'] .cheeks { opacity: 1; }
+.pip[data-mood='celebrating'] .pip-halo { opacity: 1; }
+.pip[data-mood='celebrating'] .bulb-glow { opacity: .8; }
+
+.pip[data-mood='wild'] .eyes-open { opacity: 0; }
+.pip[data-mood='wild'] .eyes-star { opacity: 1; }
+.pip[data-mood='wild'] .m-open { opacity: 1; }
+.pip[data-mood='wild'] .m-tongue { opacity: 1; }
+.pip[data-mood='wild'] .cheeks { opacity: 1; }
+.pip[data-mood='wild'] .pip-halo { opacity: 1; }
+.pip[data-mood='wild'] .pip-crown { opacity: 0; }
+.pip[data-mood='wild'] .bulb-glow { opacity: 1; }
+
+.pip[data-mood='special'] .eyes-open { opacity: 0; }
+.pip[data-mood='special'] .eyes-star { opacity: 1; }
+.pip[data-mood='special'] .m-open { opacity: 1; }
+.pip[data-mood='special'] .m-tongue { opacity: 1; }
+.pip[data-mood='special'] .cheeks { opacity: 1; }
+.pip[data-mood='special'] .pip-crown { opacity: 1; }
+.pip[data-mood='special'] .pip-halo { opacity: 1; }
+.pip[data-mood='special'] .bulb-glow { opacity: 1; }
+
+.pip[data-mood='major'] .eyes-open { opacity: 0; }
+.pip[data-mood='major'] .eyes-star { opacity: 1; }
+.pip[data-mood='major'] .m-open { opacity: 1; }
+.pip[data-mood='major'] .m-tongue { opacity: 1; }
+.pip[data-mood='major'] .cheeks { opacity: 1; }
+.pip[data-mood='major'] .pip-crown { opacity: 1; }
+.pip[data-mood='major'] .pip-halo { opacity: 1; }
+.pip[data-mood='major'] .bulb-glow { opacity: 1; }
+:root[data-motion='full'] .pip[data-mood='major'] .pip-halo,
+:root[data-motion='full'] .pip[data-mood='special'] .pip-halo {
+  animation: halo-spin 5s linear infinite; transform-origin: 100px 22px;
+}
+
+/* sparkles only show for the top tiers */
+.sparkles { opacity: 0; transition: opacity .3s; }
+.pip[data-mood='celebrating'] .sparkles,
+.pip[data-mood='wild'] .sparkles,
+.pip[data-mood='special'] .sparkles,
+.pip[data-mood='major'] .sparkles { opacity: 1; }
+:root[data-motion='full'] .sp1 { animation: sparkle-tw 1.6s ease-in-out infinite; }
+:root[data-motion='full'] .sp2 { animation: sparkle-tw 1.8s ease-in-out .3s infinite; }
+:root[data-motion='full'] .sp3 { animation: sparkle-tw 2s ease-in-out .6s infinite; }
+:root[data-motion='full'] .sp4 { animation: sparkle-tw 1.7s ease-in-out .15s infinite; }
+
+/* reaction bursts, triggered via classes added/removed in JS */
+:root[data-motion='full'] .pip-wrap.r-jump .pip-bob,
+:root[data-motion='low'] .pip-wrap.r-jump .pip-bob { animation: pip-jump .85s var(--ease-back); }
+:root[data-motion='full'] .pip-wrap.r-spin .pip-bob { animation: pip-spin 1.1s var(--ease-back); }
+:root[data-motion='full'] .pip-wrap.r-wiggle .pip-bob { animation: pip-wiggle .6s ease-in-out 2; }
+:root[data-motion='full'] .pip-wrap.r-jump .arm-l,
+:root[data-motion='full'] .pip-wrap.r-spin .arm-l,
+:root[data-motion='full'] .pip-wrap.r-wiggle .arm-l { animation: arm-wave-l .5s ease-in-out 2; }
+:root[data-motion='full'] .pip-wrap.r-jump .arm-r,
+:root[data-motion='full'] .pip-wrap.r-spin .arm-r,
+:root[data-motion='full'] .pip-wrap.r-wiggle .arm-r { animation: arm-wave-r .5s ease-in-out 2; }
+
+.pip-shadow { transition: opacity .2s; }
+
+/* ---------- speech bubble ---------- */
+.bubble.pop { animation: bubble-pop .3s var(--ease-back); }
+
+/* ---------- fx layer ---------- */
+#fx { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
+.fx-p { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.fx-float { position: absolute; left: 0; top: 0; font-weight: 800; font-size: 22px; will-change: transform, opacity; text-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.fx-banner {
+  position: fixed; left: 50%; top: 42%; text-align: center; will-change: transform, opacity;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.fx-banner b {
+  font-size: 64px; font-weight: 800; letter-spacing: -.02em;
+  background: linear-gradient(135deg, var(--amber), var(--pink) 55%, var(--brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root[data-motion='full'] .fx-banner b { animation: fx-banner-glow 1.4s ease-in-out infinite; }
+.fx-banner span { font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.4); }
+
+/* ---------- reduced motion: kill everything non-essential ---------- */
+:root[data-motion='off'] * {
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .12s !important;
+  scroll-behavior: auto !important;
+}
+:root[data-motion='off'] .pip-bob,
+:root[data-motion='off'] .pip-halo,
+:root[data-motion='off'] .sparkles > * { animation: none !important; }
+
+:root[data-motion='low'] .btn-plus::after,
+:root[data-motion='low'] .fx-banner b { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .12s !important; }
+}
