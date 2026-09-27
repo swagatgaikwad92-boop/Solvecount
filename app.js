@@ -7,7 +7,7 @@ import { applyAppearance, initSettings } from './settings.js';
 import { initHome } from './home.js';
 import { initHistory } from './history.js';
 import { initStats } from './statistics.js';
-import { startReminderLoop } from './notify.js';
+import { startNotificationLoop, handleNavigateRoute } from './notify.js';
 
 const TABS = [
   { id: 'home', label: 'Today', icon: 'today' },
@@ -59,11 +59,24 @@ function registerServiceWorker() {
     if (hadController) toast('SolveCount was updated', { duration: 9000, action: { label: 'Reload', onClick: () => location.reload() } });
     hadController = true;
   });
+  // A notification click, or one of its actions, posts a route back here when the app is
+  // already open (a fresh launch is handled by routeFromHash() instead).
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'sc-navigate') handleNavigateRoute(event.data.route);
+  });
   const go = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).catch((e) => console.warn('Service worker not registered', e));
   // The window 'load' event may already have fired by the time we get here (boot() awaits
   // IndexedDB first), so check readyState instead of only listening for an event we could miss.
   if (document.readyState === 'complete') go();
   else window.addEventListener('load', go, { once: true });
+}
+
+/** SolveCount was opened fresh from a notification (e.g. index.html#history). */
+function routeFromHash() {
+  const route = (location.hash || '').replace('#', '');
+  if (!route) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  handleNavigateRoute(route);
 }
 
 async function boot() {
@@ -91,8 +104,9 @@ async function boot() {
   window.addEventListener('focus', roll);
 
   history.replaceState(null, '');
-  startReminderLoop();
+  startNotificationLoop();
   registerServiceWorker();
+  routeFromHash();
 
   const splash = $('#splash');
   if (splash) {

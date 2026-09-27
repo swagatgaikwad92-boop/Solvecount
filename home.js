@@ -9,7 +9,7 @@ import { burst, floatText, confetti, banner, haptic } from './fx.js';
 import { openProofFlow, quickAdd, pickQuickSubject } from './addflow.js';
 import { openDayScreen, openViewer, loadThumbURLs } from './timeline.js';
 import { defaultSubjectId } from './state.js';
-import { notifyAchievement } from './notify.js';
+import { notifyAchievements } from './notify.js';
 
 export function initHome(host) {
   let hold = false;
@@ -173,7 +173,7 @@ export function initHome(host) {
       confetti(milestone >= 50 ? 1.4 : 1);
       banner(`${milestone}!`, 'questions today');
     }
-    for (const a of achievements) notifyAchievement(a);
+    notifyAchievements(achievements);
   }
 
   bus.on('add-start', () => {

@@ -3,7 +3,7 @@
  * IndexedDB (all real data) is untouched by this file.
  */
 
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.1.0';
 const CACHE = `solvecount-${VERSION}`;
 
 const SCOPE = self.registration.scope; // e.g. https://user.github.io/solvecount/
@@ -19,7 +19,9 @@ const PRECACHE = [
   './poppins-Medium.woff', './poppins-Bold.woff',
   './icon-192.png', './icon-512.png',
   './icon-maskable-192.png', './icon-maskable-512.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './icon-mascot-happy.png', './icon-mascot-sleepy.png', './icon-mascot-excited.png',
+  './icon-mascot-curious.png', './icon-mascot-celebrating.png', './badge-96.png'
 ].map(P);
 
 self.addEventListener('install', (event) => {
@@ -80,21 +82,37 @@ self.addEventListener('periodicsync', (event) => {
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window' });
     if (clientsList.length) return; // app is open — it handles its own reminder timing
-    await self.registration.showNotification('Ready for a question or two?', {
-      body: 'Your study trail is waiting. Snap one and watch it grow.',
+    await self.registration.showNotification('🫣 Psst...', {
+      body: 'Your mascot is still awake. Apparently it believes another question might happen.',
       tag: 'daily-reminder',
-      icon: P('./icon-192.png'),
-      badge: P('./icon-192.png')
+      icon: P('./icon-mascot-sleepy.png'),
+      badge: P('./badge-96.png'),
+      data: { route: 'home' },
+      actions: [{ action: 'add', title: 'Add Question' }, { action: 'view-today', title: 'View Today' }]
     });
   })());
 });
 
+/* Route a notification (or one of its actions) back into the app: focus an open window and
+ * postMessage the route, or open a fresh one with the route in the URL hash. */
+const ROUTE_FOR_ACTION = {
+  'view-today': 'home',
+  'view-history': 'history',
+  'view-stats': 'stats',
+  add: 'add'
+};
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const route = ROUTE_FOR_ACTION[event.action] || event.notification.data?.route || 'home';
   event.waitUntil((async () => {
     const list = await self.clients.matchAll({ type: 'window' });
     const existing = list.find((c) => c.url.startsWith(SCOPE));
-    if (existing) return existing.focus();
-    return self.clients.openWindow(P('./index.html'));
+    if (existing) {
+      existing.focus();
+      existing.postMessage({ type: 'sc-navigate', route });
+      return;
+    }
+    return self.clients.openWindow(P(`./index.html#${route}`));
   })());
 });

@@ -10,23 +10,30 @@
  */
 
 const DB_NAME = 'solvecount';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbPromise = null;
 
 export function open() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (ev) => {
       const db = req.result;
-      const entries = db.createObjectStore('entries', { keyPath: 'id' });
-      entries.createIndex('day', 'day');
-      entries.createIndex('ts', 'ts');
-      db.createObjectStore('photos', { keyPath: 'id' });
-      db.createObjectStore('thumbs', { keyPath: 'id' });
-      db.createObjectStore('subjects', { keyPath: 'id' });
-      db.createObjectStore('settings', { keyPath: 'key' });
-      db.createObjectStore('daily', { keyPath: 'day' });
+      if (ev.oldVersion < 1) {
+        const entries = db.createObjectStore('entries', { keyPath: 'id' });
+        entries.createIndex('day', 'day');
+        entries.createIndex('ts', 'ts');
+        db.createObjectStore('photos', { keyPath: 'id' });
+        db.createObjectStore('thumbs', { keyPath: 'id' });
+        db.createObjectStore('subjects', { keyPath: 'id' });
+        db.createObjectStore('settings', { keyPath: 'key' });
+        db.createObjectStore('daily', { keyPath: 'day' });
+      }
+      if (ev.oldVersion < 2) {
+        // Notification log: dedupes and rate-limits the mascot's notifications.
+        const notifLog = db.createObjectStore('notifLog', { keyPath: 'id' });
+        notifLog.createIndex('day', 'day');
+      }
     };
     req.onsuccess = () => {
       req.result.onversionchange = () => req.result.close();
@@ -181,6 +188,38 @@ export async function getThumbs(ids) {
 
 export const countPhotos = () => tx('photos', 'readonly', (P) => wrap(P.count()));
 
+/* ---------- notification log (dedup + smart rate-limiting) ---------- */
+/** Has a notification of this type already fired today (or for this specific key)? */
+export async function wasNotified(key) {
+  const row = await tx('notifLog', 'readonly', (N) => wrap(N.get(key)));
+  return !!row;
+}
+
+export async function logNotified(key, type, day) {
+  await tx('notifLog', 'readwrite', (N) => wrap(N.put({ id: key, type, day, ts: Date.now() })));
+}
+
+/** Keep the log small — drop anything older than `days`. Runs occasionally, not on every write. */
+export async function pruneNotificationLog(days = 30) {
+  const cutoff = addDaysKey(dayKey(), -days);
+  await tx('notifLog', 'readwrite', async (N) => {
+    const all = await wrap(N.getAll());
+    for (const row of all) if (!row.day || row.day < cutoff) N.delete(row.id);
+  });
+}
+
+// Tiny local copies (storage.js has no dependency on utils.js) to avoid a circular import.
+function dayKey(ts = Date.now()) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function addDaysKey(key, n) {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d, 12, 0, 0);
+  dt.setDate(dt.getDate() + n);
+  return dayKey(dt.getTime());
+}
+
 /* ---------- export / import / clear ---------- */
 function blobToDataURL(blob) {
   return new Promise((res, rej) => {
@@ -281,9 +320,9 @@ export async function importBackup(obj) {
     } catch { thumbRecords.push({ id: p.id, blob: p.blob }); }
   }
 
-  await tx(['entries', 'photos', 'thumbs', 'subjects', 'settings', 'daily'], 'readwrite',
-    async (E, P, TH, S, T, D) => {
-      await Promise.all([E.clear(), P.clear(), TH.clear(), S.clear(), T.clear(), D.clear()].map(wrap));
+  await tx(['entries', 'photos', 'thumbs', 'subjects', 'settings', 'daily', 'notifLog'], 'readwrite',
+    async (E, P, TH, S, T, D, N) => {
+      await Promise.all([E.clear(), P.clear(), TH.clear(), S.clear(), T.clear(), D.clear(), N.clear()].map(wrap));
       for (const e of entries) E.put(e);
       for (const p of photoRecords) P.put(p);
       for (const t of thumbRecords) TH.put(t);
@@ -295,9 +334,9 @@ export async function importBackup(obj) {
 }
 
 export async function clearEverything() {
-  await tx(['entries', 'photos', 'thumbs', 'subjects', 'settings', 'daily'], 'readwrite',
-    async (E, P, TH, S, T, D) => {
-      await Promise.all([E.clear(), P.clear(), TH.clear(), S.clear(), T.clear(), D.clear()].map(wrap));
+  await tx(['entries', 'photos', 'thumbs', 'subjects', 'settings', 'daily', 'notifLog'], 'readwrite',
+    async (E, P, TH, S, T, D, N) => {
+      await Promise.all([E.clear(), P.clear(), TH.clear(), S.clear(), T.clear(), D.clear(), N.clear()].map(wrap));
       for (const s of DEFAULT_SUBJECTS) S.put(s);
     });
 }

@@ -111,33 +111,49 @@ export function initSettings(host) {
 
     /* notifications */
     const perm = notify.permission();
-    const reminderToggle = toggle({
-      checked: setting('reminderEnabled') && perm === 'granted', label: 'Daily reminder',
+    const supported = notify.notificationsSupported();
+
+    const requestIfNeeded = async () => {
+      const p = await notify.ask();
+      if (p !== 'granted') {
+        toast(p === 'unsupported' ? 'Notifications are not supported on this browser.' : 'Notifications are blocked. Allow them in your browser’s site settings.', { tone: 'warn' });
+        return false;
+      }
+      return true;
+    };
+
+    const milestoneToggle = toggle({
+      checked: setting('milestonesEnabled') && perm === 'granted', label: 'Milestones',
       onChange: async (on) => {
-        if (on) {
-          const p = await notify.ask();
-          if (p !== 'granted') {
-            toast(p === 'unsupported' ? 'Notifications are not supported on this browser.' : 'Notifications are blocked. Allow them in your browser’s site settings.', { tone: 'warn' });
-            return false;
-          }
-        }
-        await put('reminderEnabled', on);
-        await notify.syncBackgroundReminder(on);
+        if (on && !(await requestIfNeeded())) return false;
+        await put('milestonesEnabled', on);
         render();
         return true;
       }
     });
-    const milestoneToggle = toggle({
-      checked: setting('milestonesEnabled') && perm === 'granted', label: 'Milestone notifications',
+
+    const summaryToggle = toggle({
+      checked: setting('dailySummaryEnabled') && perm === 'granted', label: 'Daily summary',
       onChange: async (on) => {
-        if (on) {
-          const p = await notify.ask();
-          if (p !== 'granted') {
-            toast(p === 'unsupported' ? 'Notifications are not supported on this browser.' : 'Notifications are blocked. Allow them in your browser’s site settings.', { tone: 'warn' });
-            return false;
-          }
-        }
-        await put('milestonesEnabled', on);
+        if (on && !(await requestIfNeeded())) return false;
+        await put('dailySummaryEnabled', on);
+        render();
+        return true;
+      }
+    });
+    const summaryTimeInput = el('input', { type: 'time', class: 'field time-field', value: setting('dailySummaryTime'), 'aria-label': 'Daily summary time' });
+    summaryTimeInput.addEventListener('change', async () => {
+      if (summaryTimeInput.value) { await put('dailySummaryTime', summaryTimeInput.value); await put('lastSummaryDay', null, true); }
+    });
+
+    const reminderToggle = toggle({
+      checked: setting('reminderEnabled') && perm === 'granted', label: 'Friendly reminders',
+      onChange: async (on) => {
+        if (on && !(await requestIfNeeded())) return false;
+        await put('reminderEnabled', on);
+        await notify.syncBackgroundReminder(on);
+        if (!on) await put('dailyStartEnabled', false);
+        render();
         return true;
       }
     });
@@ -145,11 +161,37 @@ export function initSettings(host) {
     timeInput.addEventListener('change', async () => {
       if (timeInput.value) { await put('reminderTime', timeInput.value); await put('lastReminderDay', null, true); }
     });
+    const dailyStartToggle = toggle({
+      checked: setting('dailyStartEnabled') && perm === 'granted', label: 'Good-morning hello',
+      onChange: async (on) => { await put('dailyStartEnabled', on); render(); return true; }
+    });
+    const dailyStartTimeInput = el('input', { type: 'time', class: 'field time-field', value: setting('dailyStartTime'), 'aria-label': 'Good-morning time' });
+    dailyStartTimeInput.addEventListener('change', async () => {
+      if (dailyStartTimeInput.value) { await put('dailyStartTime', dailyStartTimeInput.value); await put('lastDailyStartDay', null, true); }
+    });
+
+    const mascotToggle = toggle({
+      checked: setting('mascotMomentsEnabled') && perm === 'granted', label: 'Mascot moments',
+      onChange: async (on) => {
+        if (on && !(await requestIfNeeded())) return false;
+        await put('mascotMomentsEnabled', on);
+        return true;
+      }
+    });
+
+    const remindersOn = setting('reminderEnabled') && perm === 'granted';
     body.append(group('Notifications',
-      row('Daily reminder', reminderToggle, { sub: 'A gentle nudge if you have not solved anything yet.' }),
-      setting('reminderEnabled') && perm === 'granted' ? row('Reminder time', timeInput) : null,
-      row('Milestone notifications', milestoneToggle, { sub: 'Big days, streaks and all-time totals.' }),
-      el('p', { class: 'set-note' }, 'Reminders are local to this device. They show up while SolveCount can run in the background, which depends on your browser.')));
+      row('Milestones', milestoneToggle, { sub: 'Question milestones, streaks and big all-time totals.' }),
+      row('Daily summary', summaryToggle, { sub: 'A short recap from Pip, once each evening.' }),
+      setting('dailySummaryEnabled') && perm === 'granted' ? row('Summary time', summaryTimeInput) : null,
+      row('Friendly reminders', reminderToggle, { sub: 'A gentle nudge if you have not solved anything yet.' }),
+      remindersOn ? row('Reminder time', timeInput) : null,
+      remindersOn ? row('Good-morning hello', dailyStartToggle, { sub: 'A curious little “new day” message.', stack: false }) : null,
+      remindersOn && setting('dailyStartEnabled') ? row('Morning time', dailyStartTimeInput) : null,
+      row('Mascot moments', mascotToggle, { sub: 'Rare, playful pings from Pip — not on a schedule.' }),
+      el('p', { class: 'set-note' }, supported
+        ? 'Notifications are local to this device. They show up while SolveCount can run in the background, which depends on your browser.'
+        : 'This browser doesn’t support notifications, so these stay off here — the rest of SolveCount works exactly the same.')));
 
     /* data */
     storageLine = el('small', {}, 'Calculating…');

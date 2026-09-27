@@ -5,7 +5,11 @@
 import * as db from './storage.js';
 import { bus, dayKey, addDays, uid } from './utils.js';
 
-export const MILESTONES = [1, 5, 10, 25, 50, 100];
+// Question-count milestones that earn a notification. Edit freely — the mascot
+// picks its message/expression by how big the milestone is, not by this exact list.
+export const MILESTONES = [1, 5, 10, 25, 50, 75, 100];
+export const STREAK_MILESTONES = [3, 7, 14, 30, 50, 100];
+export const TOTAL_MILESTONES = [100, 250, 500, 1000, 2500, 5000];
 
 export const DEFAULT_SETTINGS = {
   theme: 'system',
@@ -14,11 +18,22 @@ export const DEFAULT_SETTINGS = {
   dailyGoal: 25,
   lastSubject: null,
   timelineOrder: 'asc',
+  // Friendly reminders: a gentle evening nudge + an optional good-morning hello.
   reminderEnabled: false,
   reminderTime: '19:00',
-  milestonesEnabled: false,
   lastReminderDay: null,
-  lastMilestoneKey: null
+  dailyStartEnabled: false,
+  dailyStartTime: '08:00',
+  lastDailyStartDay: null,
+  // Milestones: question milestones, streaks and all-time totals.
+  milestonesEnabled: false,
+  // Daily summary: a small recap sent once, near the end of the day.
+  dailySummaryEnabled: false,
+  dailySummaryTime: '21:30',
+  lastSummaryDay: null,
+  // Mascot moments: rare, spontaneous chatter — not on any schedule.
+  mascotMomentsEnabled: false,
+  lastMascotMomentDay: null
 };
 
 export const state = {
@@ -118,12 +133,12 @@ export async function addQuestion({ subjectId, difficulty = null, photo = null }
   const total = dayTotal(entry.day);
   const achievements = [];
   const ms = nextMilestone(before, total);
-  if (ms && ms >= 10) achievements.push({ key: `day-${entry.day}-${ms}`, title: `${ms} questions today`, body: 'That is a big day. Nicely done.' });
-  if (before === 0 && state.streak.current > streakBefore && [3, 7, 14, 30, 50, 100].includes(state.streak.current)) {
-    achievements.push({ key: `streak-${state.streak.current}`, title: `${state.streak.current}-day streak`, body: 'Your study trail keeps growing.' });
+  if (ms) achievements.push({ type: 'milestone', key: `day-${entry.day}-${ms}`, value: ms });
+  if (before === 0 && state.streak.current > streakBefore && STREAK_MILESTONES.includes(state.streak.current)) {
+    achievements.push({ type: 'streak', key: `streak-${state.streak.current}`, value: state.streak.current });
   }
-  for (const t of [100, 250, 500, 1000, 2500, 5000]) {
-    if (totalBefore < t && state.totalAll >= t) achievements.push({ key: `total-${t}`, title: `${t} questions solved`, body: 'All-time total. That is a lot of thinking.' });
+  for (const t of TOTAL_MILESTONES) {
+    if (totalBefore < t && state.totalAll >= t) achievements.push({ type: 'total', key: `total-${t}`, value: t });
   }
   return { entry, total, milestone: ms, achievements };
 }
