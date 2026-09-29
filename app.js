@@ -8,6 +8,7 @@ import { initHome } from './home.js';
 import { initHistory } from './history.js';
 import { initStats } from './statistics.js';
 import { startNotificationLoop, handleNavigateRoute } from './notify.js';
+import { initStudyTimer } from './timer-ui.js';
 
 const TABS = [
   { id: 'home', label: 'Today', icon: 'today' },
@@ -114,6 +115,9 @@ async function boot() {
     setTimeout(() => splash.remove(), 400);
   }
   document.body.classList.add('is-ready');
+
+  // Floating study timer: created last so a problem here can never stop the rest of the app.
+  try { window.studyTimer = initStudyTimer(); } catch (err) { console.warn('Study timer unavailable', err); }
 }
 
 boot();

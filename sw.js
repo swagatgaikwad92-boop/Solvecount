@@ -3,7 +3,7 @@
  * IndexedDB (all real data) is untouched by this file.
  */
 
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.2.0';
 const CACHE = `solvecount-${VERSION}`;
 
 const SCOPE = self.registration.scope; // e.g. https://user.github.io/solvecount/
@@ -16,6 +16,7 @@ const PRECACHE = [
   './camera.js', './addflow.js', './timeline.js', './home.js',
   './statistics.js', './history.js', './subjects.js', './settings.js',
   './mascot.js', './counter.js', './fx.js', './notify.js', './install.js',
+  './timer.css', './timer-state.js', './timer-ui.js',
   './poppins-Medium.woff', './poppins-Bold.woff',
   './icon-192.png', './icon-512.png',
   './icon-maskable-192.png', './icon-maskable-512.png',

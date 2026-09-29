@@ -1,0 +1,189 @@
+/* SolveCount — floating study timer: a small piece of glass above the app.
+   Reuses the app's tokens (--glass-*, --gi, --ink, --brand*, --ease, --tab-h, safe-area vars).
+   All motion is transform/opacity on tiny layers, driven by CSS; [data-motion] gates it. */
+
+.study-timer {
+  --st-edge: 12px;
+  --st-bottom: calc(var(--tab-h) + var(--safe-b) + 24px); /* clears the tab bar with breathing room */
+  position: fixed; z-index: 45; /* above tab bar (40), below sheets/overlays (60) and toasts (80) */
+  width: 64px; height: 64px; border-radius: 32px;
+  color: var(--ink);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.study-timer[data-corner='br'] { right: calc(var(--st-edge) + var(--safe-r)); bottom: var(--st-bottom); }
+.study-timer[data-corner='bl'] { left: calc(var(--st-edge) + var(--safe-l)); bottom: var(--st-bottom); }
+.study-timer[data-corner='tr'] { right: calc(var(--st-edge) + var(--safe-r)); top: calc(var(--safe-t) + var(--st-edge)); }
+.study-timer[data-corner='tl'] { left: calc(var(--st-edge) + var(--safe-l)); top: calc(var(--safe-t) + var(--st-edge)); }
+
+.study-timer[data-mode='expanded'] {
+  width: min(212px, calc(100vw - 2 * var(--st-edge) - var(--safe-l) - var(--safe-r)));
+  height: 138px; border-radius: 36px;
+}
+.study-timer.is-animated { transition: width .44s var(--ease), height .44s var(--ease), border-radius .44s var(--ease); }
+.study-timer.is-snapping { transition: transform .4s var(--ease), width .44s var(--ease), height .44s var(--ease), border-radius .44s var(--ease); }
+.study-timer { transition: scale .2s var(--ease); }
+.study-timer.is-dragging { transition: none; scale: 1.06; cursor: grabbing; }
+
+/* ---------- the glass ---------- */
+.st-glass {
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(120% 90% at 28% 8%, rgba(255,255,255,.34), transparent 46%),
+    linear-gradient(150deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 48%, rgba(110,190,255,.10)),
+    color-mix(in srgb, var(--bg-1) 40%, transparent); /* keeps digits legible over any content */
+  backdrop-filter: blur(calc(16px * var(--gi) + 5px)) saturate(1.55);
+  -webkit-backdrop-filter: blur(calc(16px * var(--gi) + 5px)) saturate(1.55);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255,255,255,.55),        /* top rim light */
+    inset 0 -10px 18px rgba(70,200,255,.10),         /* water tint pooling at the bottom */
+    inset 0 0 22px rgba(255,255,255,.06),
+    0 16px 30px -14px var(--glass-shadow),
+    0 2px 6px rgba(6,4,20,.16);
+}
+/* specular glint — a fixed highlight that makes it read as a curved object */
+.st-glass::after {
+  content: ''; position: absolute; left: 14%; top: 7%; width: 44%; height: 20%;
+  border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
+  transform: rotate(-16deg); opacity: .55; pointer-events: none;
+}
+
+/* ---------- liquid: big soft blobs slowly turning inside the glass ---------- */
+.st-liquid {
+  position: absolute; left: -32%; top: -32%; width: 164%; height: 164%;
+  border-radius: 46% 54% 51% 49% / 52% 46% 54% 48%;
+  opacity: .32; transition: opacity .9s ease;
+  animation: st-drift-a 24s linear infinite; animation-play-state: paused;
+}
+.st-liquid-a {
+  background:
+    radial-gradient(closest-side at 32% 34%, rgba(70,200,255,.42), transparent 72%),
+    radial-gradient(closest-side at 72% 70%, rgba(139,107,255,.32), transparent 74%);
+}
+.st-liquid-b {
+  border-radius: 54% 46% 48% 52% / 46% 54% 46% 54%;
+  background:
+    radial-gradient(closest-side at 66% 30%, rgba(255,255,255,.20), transparent 70%),
+    radial-gradient(closest-side at 28% 72%, rgba(255,126,182,.16), transparent 72%);
+  animation: st-drift-b 34s linear infinite; animation-play-state: paused;
+}
+@keyframes st-drift-a { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.07); } 100% { transform: rotate(360deg) scale(1); } }
+@keyframes st-drift-b { 0% { transform: rotate(360deg) scale(1.04); } 50% { transform: rotate(180deg) scale(.96); } 100% { transform: rotate(0) scale(1.04); } }
+
+/* a slow highlight that sweeps across every so often */
+.st-shine {
+  position: absolute; top: -30%; left: -55%; width: 42%; height: 160%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.26), transparent);
+  transform: translateX(-140%) rotate(18deg); opacity: 0; transition: opacity .9s ease;
+  animation: st-shine 12s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes st-shine { 0%, 45% { transform: translateX(-140%) rotate(18deg); } 100% { transform: translateX(420%) rotate(18deg); } }
+
+/* three tiny motes drifting upward. Outer element carries the state opacity, ::before the motion. */
+.st-p { position: absolute; width: 3px; height: 3px; opacity: 0; transition: opacity .9s ease; }
+.st-p::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(255,255,255,.85);
+  animation: st-rise 10s ease-in-out infinite; animation-play-state: paused; opacity: 0;
+}
+.st-p1 { left: 30%; bottom: 14%; }
+.st-p2 { left: 58%; bottom: 20%; width: 2px; height: 2px; }
+.st-p2::before { animation-duration: 13s; animation-delay: -4.5s; }
+.st-p3 { left: 76%; bottom: 10%; }
+.st-p3::before { animation-duration: 11s; animation-delay: -8s; }
+@keyframes st-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  25% { opacity: .6; }
+  80% { opacity: .3; }
+  100% { transform: translate(5px, -34px); opacity: 0; }
+}
+
+/* soft breathing glow behind the glass */
+.st-halo { position: absolute; inset: -9px; border-radius: inherit; opacity: 0; transition: opacity .9s ease; pointer-events: none; }
+.st-halo::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; filter: blur(9px);
+  background: radial-gradient(closest-side, rgba(70,200,255,.55), rgba(139,107,255,.28) 62%, transparent);
+  animation: st-breathe 7s ease-in-out infinite; animation-play-state: paused;
+}
+@keyframes st-breathe { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+
+/* ---------- run states: idle (quiet glass) · running (alive) · paused (frozen, dimmer) ---------- */
+.study-timer[data-run='running'] .st-liquid,
+.study-timer[data-run='running'] .st-shine,
+.study-timer[data-run='running'] .st-p,
+.study-timer[data-run='running'] .st-halo::before,
+.study-timer[data-run='running'] .st-p::before { animation-play-state: running; }
+.study-timer[data-run='running'] .st-liquid { opacity: .95; }
+.study-timer[data-run='running'] .st-shine { opacity: 1; }
+.study-timer[data-run='running'] .st-p { opacity: 1; }
+.study-timer[data-run='running'] .st-halo { opacity: .5; }
+.study-timer[data-run='paused'] .st-liquid { opacity: .5; }
+.study-timer[data-run='paused'] .st-shine { opacity: .35; }
+.study-timer[data-run='paused'] .st-p { opacity: .35; }
+.study-timer[data-run='paused'] .st-halo { opacity: .14; }
+
+/* ---------- bubble face ---------- */
+.st-face {
+  position: absolute; inset: 0; border-radius: inherit; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  transition: opacity .2s ease .12s, transform .15s var(--ease);
+}
+.st-face:active { transform: scale(.95); }
+.st-face-ico { opacity: .72; }
+.st-mini { font-size: 13.5px; font-weight: 700; letter-spacing: .01em; line-height: 1; text-shadow: 0 1px 8px rgba(6,4,20,.28); }
+.st-face[data-long='1'] .st-mini { font-size: 11.5px; }
+:root[data-theme='light'] .st-mini, :root[data-theme='light'] .st-time { text-shadow: none; }
+.study-timer[data-mode='expanded'] .st-face { opacity: 0; pointer-events: none; transition-delay: 0s; }
+
+/* ---------- expanded panel ---------- */
+.st-panel {
+  position: absolute; inset: 0; z-index: 1; border-radius: inherit;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+  padding: 10px 12px 12px;
+  opacity: 0; pointer-events: none; transition: opacity .16s ease;
+}
+.study-timer[data-mode='expanded'] .st-panel { opacity: 1; pointer-events: auto; transition: opacity .24s ease .14s; }
+
+.st-time { display: flex; align-items: baseline; justify-content: center; font-size: 34px; line-height: 1.05; font-weight: 500; letter-spacing: -.01em; text-shadow: 0 1px 10px rgba(6,4,20,.3); }
+.st-d { display: inline-block; width: .64em; text-align: center; }
+.st-sep { display: inline-block; width: .3em; text-align: center; opacity: .65; transform: translateY(-.06em); }
+
+.st-actions { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.st-btn {
+  width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--ink); background: rgba(var(--glass-tint), .16); border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+  transition: transform .15s var(--ease), background .2s ease;
+}
+.st-btn:active { transform: scale(.92); }
+.st-primary {
+  width: 58px; height: 58px; color: #fff; border-color: rgba(255,255,255,.35);
+  background: linear-gradient(145deg, rgba(139,107,255,.95), rgba(70,200,255,.92));
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.5), 0 10px 20px -9px rgba(139,107,255,.75);
+}
+.st-primary .ico svg { filter: drop-shadow(0 1px 2px rgba(6,4,20,.25)); }
+.study-timer :focus-visible { outline: 2.5px solid var(--brand-2); outline-offset: 2px; border-radius: 50%; }
+.st-face:focus-visible { border-radius: inherit; }
+
+/* keep the last bit of every page reachable above the floating bubble */
+body.has-study-timer .app { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 14px + 76px); }
+@media (min-width: 720px) { body.has-study-timer .app { padding-bottom: 96px; } }
+
+/* ---------- motion preferences (mirrors the app's [data-motion] + the OS setting) ---------- */
+/* low: keep the calm drift, drop the extras */
+:root[data-motion='low'] .st-shine, :root[data-motion='low'] .st-p { display: none; }
+/* off / reduced motion: a still, simple glass bubble — no drifting liquid, glints or motes */
+:root[data-motion='off'] .study-timer *, :root[data-motion='off'] .study-timer *::before,
+:root[data-motion='off'] .study-timer { animation: none !important; transition: none !important; }
+:root[data-motion='off'] .st-shine, :root[data-motion='off'] .st-p { display: none; }
+:root[data-motion='off'] .st-liquid { transform: none; }
+:root[data-motion='off'] .study-timer[data-run='running'] .st-halo { opacity: .3; }
+@media (prefers-reduced-motion: reduce) {
+  .study-timer, .study-timer *, .study-timer *::before { animation: none !important; transition: none !important; }
+  .st-shine, .st-p { display: none; }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .st-glass { background: var(--bg-2); }
+}
